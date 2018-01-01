@@ -1,0 +1,77 @@
+From 6bb04a88f143a1ba6400d86670ce828aa95ea5dd Mon Sep 17 00:00:00 2001
+Message-Id: <6bb04a88f143a1ba6400d86670ce828aa95ea5dd.1514811134.git.gzwalter79@gmail.com>
+From: walter79 <gzwalter79@gmail.com>
+Date: Mon, 1 Jan 2018 13:51:49 +0100
+Subject: [PATCH] framework-base-displaymanagerservice-i9195i
+
+Change-Id: I61b09e6d24a740b526b22d6b78a1befaad81ee2a
+---
+ .../server/display/DisplayManagerService.java      | 31 +++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/services/core/java/com/android/server/display/DisplayManagerService.java b/services/core/java/com/android/server/display/DisplayManagerService.java
+index 9c762cc..2d807d5 100644
+--- a/services/core/java/com/android/server/display/DisplayManagerService.java
++++ b/services/core/java/com/android/server/display/DisplayManagerService.java
+@@ -62,6 +62,8 @@ import com.android.server.UiThread;
+ 
+ import java.io.FileDescriptor;
+ import java.io.PrintWriter;
++import java.io.FileOutputStream;
++import java.io.IOException;
+ import java.util.ArrayList;
+ import java.util.Arrays;
+ import java.util.List;
+@@ -134,7 +136,8 @@ public final class DisplayManagerService extends SystemService {
+     private WindowManagerInternal mWindowManagerInternal;
+     private InputManagerInternal mInputManagerInternal;
+     private IMediaProjectionManager mProjectionService;
+-
++    public static final String TS_PATH = "/sys/class/input/input2/enabled";
++    public static final String KB_PATH = "/sys/class/input/input1/enabled";
+     // The synchronization root for the display manager.
+     // This lock guards most of the display manager's state.
+     // NOTE: This is synchronized on while holding WindowManagerService.mWindowMap so never call
+@@ -722,6 +725,30 @@ public final class DisplayManagerService extends SystemService {
+         }
+         scheduleTraversalLocked(false);
+     }
++private boolean write_sysfs(String path, boolean on) {
++        try {
++            FileOutputStream fos = new FileOutputStream(path);
++            byte[] bytes = new byte[2];
++            bytes[0] = (byte)(on ? '1' : '0');
++            bytes[1] = '\n';
++            fos.write(bytes);
++            fos.close();
++        } catch (Exception e) {
++            Slog.i(TAG, "Fail: " + e.getLocalizedMessage());
++            return false;
++        }
++        return true;
++    }
++	
++    private void enableDevices(boolean enable) {
++        boolean ret;
++        String ena = enable ? "enable" : "disable"; 
++            // Turn on touch input
++            ret = write_sysfs(TS_PATH, enable);
++            Slog.i(TAG,ena + " touchscreen, success? " + ret);
++	    ret = write_sysfs(KB_PATH, enable);
++            Slog.i(TAG, ena + " keyboard, success? " + ret);
++    }
+ 
+     private void handleDisplayDeviceChanged(DisplayDevice device) {
+         synchronized (mSyncRoot) {
+@@ -735,6 +762,8 @@ public final class DisplayManagerService extends SystemService {
+             if (diff == DisplayDeviceInfo.DIFF_STATE) {
+                 Slog.i(TAG, "Display device changed state: \"" + info.name
+                         + "\", " + Display.stateToString(info.state));
++            if (info.state == Display.STATE_ON) enableDevices(true);
++	    if (info.state == Display.STATE_OFF) enableDevices(false);
+             } else if (diff != 0) {
+                 Slog.i(TAG, "Display device changed: " + info);
+             }
+-- 
+1.9.1
+

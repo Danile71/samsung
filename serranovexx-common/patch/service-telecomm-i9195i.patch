@@ -1,0 +1,62 @@
+From d80e043cd2c12d3f2b737374ab99f7206b55f863 Mon Sep 17 00:00:00 2001
+Message-Id: <d80e043cd2c12d3f2b737374ab99f7206b55f863.1514812198.git.gzwalter79@gmail.com>
+From: walter79 <gzwalter79@gmail.com>
+Date: Mon, 1 Jan 2018 14:09:45 +0100
+Subject: [PATCH] service-telecomm-i9195i
+
+packages-service-Telecomm
+
+Change-Id: I30a4e3c283933a38d95a4b88a621844c083279bb
+---
+ .../android/server/telecom/CallAudioModeStateMachine.java   | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/src/com/android/server/telecom/CallAudioModeStateMachine.java b/src/com/android/server/telecom/CallAudioModeStateMachine.java
+index cc71aec..8163d98 100644
+--- a/src/com/android/server/telecom/CallAudioModeStateMachine.java
++++ b/src/com/android/server/telecom/CallAudioModeStateMachine.java
+@@ -25,6 +25,9 @@ import android.telecom.TelecomManager;
+ import android.telephony.SubscriptionManager;
+ import android.telephony.TelephonyManager;
+ import android.util.SparseArray;
++import android.telephony.SubscriptionInfo;
++import android.content.Context;
++import android.telephony.TelephonyManager;
+ 
+ import com.android.internal.util.IState;
+ import com.android.internal.util.State;
+@@ -154,7 +157,12 @@ public class CallAudioModeStateMachine extends StateMachine {
+         public void enter() {
+             if (mIsInitialized) {
+                 Log.i(LOG_TAG, "Abandoning audio focus: now UNFOCUSED");
++		boolean setRealcallAudioParams = SystemProperties
++                    .getBoolean("ro.telephony.samsung.realcall", false);
+                 mAudioManager.abandonAudioFocusForCall();
++		if (setRealcallAudioParams) {
++                    mAudioManager.setParameters("realcall=off");
++                }
+                 mAudioManager.setMode(AudioManager.MODE_NORMAL);
+ 
+                 mMostRecentMode = AudioManager.MODE_NORMAL;
+@@ -296,6 +304,8 @@ public class CallAudioModeStateMachine extends StateMachine {
+             boolean setMsimAudioParams = SystemProperties
+                     .getBoolean("ro.multisim.set_audio_params", false);
+             Call call = mCallAudioManager.getForegroundCall();
++	    boolean setRealcallAudioParams = SystemProperties
++                    .getBoolean("ro.telephony.samsung.realcall", false);
+ 
+             mAudioManager.requestAudioFocusForCall(AudioManager.STREAM_VOICE_CALL,
+                     AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
+@@ -311,6 +321,9 @@ public class CallAudioModeStateMachine extends StateMachine {
+                 } else if (phoneId == 1) {
+                     mAudioManager.setParameters("phone_type=cp2");
+                 }
++	    if (setRealcallAudioParams) {
++                    mAudioManager.setParameters("realcall=on");
++                }
+             }
+ 
+             mAudioManager.setMode(AudioManager.MODE_IN_CALL);
+-- 
+1.9.1
+
